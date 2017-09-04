@@ -5,7 +5,7 @@ sur le model de Jquery pour les pages listes
 
 
 from pyquery import PyQuery as pq
-import tools
+import tools.tools as tools
 import datetime
 
 
@@ -24,20 +24,31 @@ def users(html):
 	return reponse
 
 
-def liens(html):
+def sujets(html):
 	reponse = []
 	d = pq(html)
 	liens = d(".lien-jv.topic-title")
 
 	for itemLien in liens:
 		if d(itemLien).parents(".topic-delete").length == 0:
-			url = "http://www.jeuxvideo.com/" + d(itemLien).attr("href")
-			reponse.append(url)
+			reponse.append({
+				'url' : "http://www.jeuxvideo.com/" + d(itemLien).attr("href"),
+				'date': d(itemLien).parent().parent().find(".topic-date .lien-jv").text(),
+				'nbReponse' : int(d(itemLien).parent().parent().find(".topic-count").text()),
+				'auteur': cleanPseudo(d(itemLien).parent().parent().find(".topic-author").text())
+			})
 
 	return reponse
 
 
-def nb_connection(html):
+def nbConnectes(html):
 	d = pq(html)
 	nb = d(".nb-connect-fofo").html();
 	nb = tools.regexOnlyValue("([0-9]*)",nb)
+	return nb
+
+
+def cleanPseudo(pseudo):
+	pseudo = pseudo.replace("\\n", "")
+	pseudo = pseudo.replace(" ", "")
+	return pseudo

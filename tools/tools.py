@@ -1,17 +1,5 @@
-import requests
 import re
-
-def simpleGetRequest(lien, argument = []):
-	try:
-		headers = {'User-Agent': 'Chrome/39.0.2171.95'}
-		response = requests.get(lien, headers=headers)
-		html = response.content
-		#print(response.status_code)
-		del response
-		return str(html)
-	except requests.exceptions.RequestException as e:
-		print("Erreur lors de l'ouverture de "+lien)
-		return False
+import config
 
 
 def regexOnlyValue(patern, candidat):
