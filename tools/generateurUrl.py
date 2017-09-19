@@ -12,5 +12,9 @@ def homePageRandom(minV = 0, maxV = 10):
 	return urlPage
 
 
+def homePage(id):
+	return config.PATERN_PATH_PAGE_LISTE.replace("[X]", str(id))
+
+
 def userProfil(pseudo):
 	return config.PATERN_PATH_AUTEUR_PROFIL.replace("[X]", pseudo)

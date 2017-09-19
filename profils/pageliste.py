@@ -30,13 +30,12 @@ def sujets(html):
 	liens = d(".lien-jv.topic-title")
 
 	for itemLien in liens:
-		if d(itemLien).parents(".topic-delete").length == 0:
-			reponse.append({
-				'url' : "http://www.jeuxvideo.com/" + d(itemLien).attr("href"),
-				'date': d(itemLien).parent().parent().find(".topic-date .lien-jv").text(),
-				'nbReponse' : int(d(itemLien).parent().parent().find(".topic-count").text()),
-				'auteur': cleanPseudo(d(itemLien).parent().parent().find(".topic-author").text())
-			})
+		reponse.append({
+			'url' : "http://www.jeuxvideo.com" + d(itemLien).attr("href"),
+			'date': d(itemLien).parent().parent().find(".topic-date .lien-jv").text(),
+			'nbReponse' : int(d(itemLien).parent().parent().find(".topic-count").text()),
+			'auteur': cleanPseudo(d(itemLien).parent().parent().find(".topic-author").text())
+		})
 
 	return reponse
 

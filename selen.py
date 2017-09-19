@@ -6,6 +6,7 @@ import tools.API as API
 import config
 import time
 import sys
+import random
 
 
 def extractsCurrent(driver):
@@ -16,19 +17,30 @@ def extractsCurrent(driver):
 
 
 def callNextButton(driver):
-	driver.find_element_by_css_selector(".pagi-suivant-actif").click()
+	driver.find_element_by_css_selector(".pagi-precedent-actif").click()
 	extractsCurrent(driver)
-	print("-- En attente --")
-	time.sleep(10)
+
 
 
 def run(startUrl):
 	driver = webdriver.Chrome(config.PATH_DRIVER_GOOGLE)
 	driver.get(startUrl)
 	extractsCurrent(driver)
+	maxError = 10
+	currentError = 0
 
 	while True:
-		callNextButton(driver)
+		try:
+			time.sleep(2)
+			callNextButton(driver)
+			currentError = 0
+			print("-- En attente --")			
+		except Exception as e:
+			print("erreur lors de la selection du bt suivant :", e)
+			currentError += 1
+			if currentError > maxError:
+				sys.exit(0)
+		
 
 
 def getOptionConsol(defaultOption):
@@ -36,9 +48,10 @@ def getOptionConsol(defaultOption):
 		if arg.find("-random=") is not -1:
 			defaultOption["random"] = True
 			defaultOption["maxRandom"] = int(arg.replace("-random=",""))
-
-	if defaultOption["random"]:
-		defaultOption["startUrl"] = generateurUrl.homePageRandom(0, defaultOption["maxRandom"])
+			defaultOption["startUrl"] = generateurUrl.homePageRandom(0, defaultOption["maxRandom"])
+		if arg.find("-id=") is not -1:
+			idA = arg.replace("-id=","")
+			defaultOption["startUrl"] = generateurUrl.homePage(idA)
 
 	return defaultOption	
 
