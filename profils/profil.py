@@ -1,79 +1,126 @@
-"""
-Fonctions d'extractions d'information appartir de contenu html
-sur le model de Jquery
-"""
-
-
-from pyquery import PyQuery as pq
+import re
 import tools
+import config
 import datetime
+from bs4 import BeautifulSoup
+
+
+
+def getLigneInfo(infoGenerales):
+	lignes = []
+
+	if len(infoGenerales) == 0:
+		return lignes
+
+	for ligne in infoGenerales[0].select("li"):
+		lib = None
+		value = None
+		selectLib = ligne.select(".info-lib")
+		selectValue = ligne.select(".info-value")
+
+		if selectLib != []:
+			lib = selectLib[0].get_text().strip().lower()
+
+		if selectValue != []:
+			value = selectValue[0].get_text().strip().lower()
+
+		if lib != None and value != None:
+			lignes.append((lib, value))
+
+	return lignes
+
+
+
+def findLigneByLabel(lignes, label):
+	for ligne in lignes:
+		if ligne[0].find(label) != -1:
+			return ligne[1]
+
+	return None
+
+
+
+def getNbMessage(lignes):
+	value = findLigneByLabel(lignes, "messages")
+	if value == None:
+		return 0
+
+	value = value.replace(".", "")
+	recherche = re.findall("([0-9]*)", value)
+	return int(recherche[0]) if len(recherche) > 0 else 0
+
+
+
+def getDateInscription(lignes):
+	value = findLigneByLabel(lignes, "depuis")
+	if value == None:
+		return "1980-01-01 00:00:00"
+
+	recherche = re.findall("([0-9]*) jours", value.replace(".", ""))
+	if len(recherche) > 0:
+		if recherche[0].isdigit() is True:
+			date = datetime.date.today() - datetime.timedelta(days = int(recherche[0]))
+			return date.strftime('%Y-%m-%d %H:%M:%S')
+	
+	return "1980-01-01 00:00:00"
+
+
+
+def getAvatar(s):
+	selectAvatar = s.select("#header-profil .content-img-avatar img");
+	if selectAvatar == []:
+		return config.PATH_DEFAULT_AVATAR
+
+	return selectAvatar[0]["src"]
+
+
+
+def getNbAbonne(s):
+	value = None
+	selectMenu = s.select(".list-menu-profil")
+
+	if len(selectMenu) == 0:
+		return 0
+	
+	for span in selectMenu[0].select("span"):
+		if span.get_text().find("Abonn") != -1:
+			value = span.get_text()
+	
+	if value == None:
+		return 0
+
+	recherche = re.findall("\(([0-9]*)\)", value.replace(".", ""))
+	if len(recherche) > 0 :
+		return int(recherche[0])
+
+	return 0
+
+
+
+def isBanned(s):
+	alerts = s.select(".alert-row")
+	for alert in alerts:
+		txt = alert.get_text()
+		if txt.find("banni") != -1:
+			return 1
+
+	imagesErreurs = s.select(".img-erreur")
+	if len(imagesErreurs) > 0:
+		return 1
+	
+	return 0
+	
 
 
 def infos(html):
-	d = pq(html)
-	info = {
-		"pays" : False,
-		"nb_messages": False,
-		"img_lien" : False,		
-		"nb_relation" : False,
-		"banni" : False,
-		"date_inscription" : False
+	soup = BeautifulSoup(html, 'html.parser')
+	infoGenerales = soup.select(".bloc-default-profil .display-line-lib");
+	lignes = getLigneInfo(infoGenerales)
+
+	return {
+		"date_inscription" : getDateInscription(lignes),
+		"nb_messages": getNbMessage(lignes),
+		"img_lien" : getAvatar(soup),		
+		"nb_relation" : getNbAbonne(soup),
+		"banni" : isBanned(soup)		
 	}
-
-
-	nbEnfant = d(".display-line-lib li").length
-	for i in range(nbEnfant):
-		candidat = d(".display-line-lib .info-lib").eq(i);
-		candidat = candidat.html()
-
-		if candidat is not None:
-			candidat = candidat.replace("\\n","")
-			candidat = candidat.replace("\\t","")
-			candidat = candidat.replace(" ","")
-		
-		if candidat == "Membredepuis:" :
-			date_inscription_s = d(".display-line-lib .info-value").eq(i);
-			if date_inscription_s.html() != None:
-				date_inscription_b = date_inscription_s.html()
-				date_inscription_b = date_inscription_b.replace(".", "")
-				date_inscription_b = tools.regexOnlyValue("([0-9]*) jours", date_inscription_b)
-				if date_inscription_b is not False:
-					if date_inscription_b.isdigit() is True:
-						info["date_inscription"] = datetime.date.today() - datetime.timedelta(int(date_inscription_b))
-		
-		if candidat == "MessagesForums:" :
-			nb_messages_s = d(".display-line-lib .info-value").eq(i);
-			if nb_messages_s.html() != None:
-				nb_messages_b = nb_messages_s.html()
-				nb_messages_b = nb_messages_b.replace(".", "")
-				nb_messages_b = tools.regexOnlyValue("([0-9]*)", nb_messages_b)	
-				if nb_messages_b != "" and nb_messages_b is not False:
-					info["nb_messages"] = nb_messages_b
-
-		if candidat == "Pays:" :
-			pays_s = d(".display-line-lib .info-value").eq(i);
-			if pays_s.html() != None:
-				pays_b = pays_s.html()
-				pays_b = pays_b.replace("\n", "")
-				pays_b = pays_b.replace("\\n", "")
-				pays_b = pays_b.replace(" ", "")
-				info["pays"] = pays_b
-
-
-	img_lien_s = d(".content-img-avatar img");
-	if img_lien_s.attr("src") != None:
-		img_lien_b = img_lien_s.attr("src")
-		info["img_lien"] = img_lien_b
-
-	nb_relation_s = d("ul.list-menu-profil li:last-child span.JvCare");
-	if nb_relation_s.html() != None:
-		nb_relation_b = nb_relation_s.html()
-		nb_relation_b = nb_relation_b.replace(".", "")
-		nb_relation_b = tools.regexOnlyValue("\(([0-9]*)\)", nb_relation_b)	
-		info["nb_relation"] = nb_relation_b
-
-	banni_s = d(".alert-danger");
-	if banni_s.html() != None:
-		info["banni"] = "1"
-
-	return info

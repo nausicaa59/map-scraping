@@ -16,13 +16,35 @@ def postListSujet(sujets):
 		print("Nombre d'item (json) valide :", rjson["nbValide"])
 		print("Nombre de sujet ajouté :", rjson["nbAjouter"])
 		print("Nombre de sujet rejeter insertion :", rjson["nbNonAjouter"])
-		#print("détaille rejet :")
-		#for rejet in rjson["notificationError"]:
-		#	print(rejet)
 	except Exception as e:
 		print("erreur : reponse invalide, détail : ", e)
 
 
 def postNbConnectes(nb, url):
 	pass
-	#print(json.dumps({"nb": nb, "urlCurrent": url}))
+
+
+def getAuteurRandom():
+	r = requests.get(config.API_PATH_AUTEUR_RANDOM)
+	return r.json()
+
+
+def getAuteurRandomByLetter(letters):
+	r = requests.get(config.API_PATH_AUTEUR_UNTREATED_BY_LETTER + letters)
+	return r.json()
+
+
+def postUpdateAuteur(auteur):
+	try:
+		start = time.time()
+		r = requests.post(config.API_PATH_AUTEUR_UPDATE, json = {"auteur": auteur})
+		rjson = r.json()
+		end = time.time()
+		print(auteur["pseudo"],"Traité en :", str(end - start), "s")
+		if rjson["formatErreur"] != [] or rjson["fatalError"]:
+			print("Erreur formatage :", rjson["formatErreur"])
+			print("Detail :", rjson["formatValide"])
+			print("fatalError :", rjson["fatalError"])
+			print(auteur)
+	except Exception as e:
+		print("erreur : reponse invalide, détail : ", e)	
